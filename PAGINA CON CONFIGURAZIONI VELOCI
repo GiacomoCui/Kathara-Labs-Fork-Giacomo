@@ -1,0 +1,152 @@
+#
+#		PAGINA CON CONFIGURAZIONI VELOCI
+#
+
+#
+# 			-	 Configurazione LAN Router
+#
+
+r1[0]=" "
+r1[1]=" "
+r1[2]=" "
+r1[3]=" "
+# Modificare con base se non necessaria la configurazione inter-routing
+r1[image]="kathara/frr"
+
+r2[0]=" "
+r2[1]=" "
+r2[2]=" "
+# Modificare con base se non necessaria la configurazione inter-routing
+r2[image]="kathara/frr"
+
+#
+# 			-	Configurazione startup Router
+# 
+
+# Ripetere il comando per ogni indirizzo e ogni porta nel router
+
+ip address add ip/net dev eth0
+
+# Inserire questo per far partire le configurazioni automatiche di RIP
+
+systemctl start vtysh
+
+#
+#			-	Configurazione frr.conf (/etc/frr/frr.conf)
+#
+
+!
+! FRRouting configuration file
+!
+!
+!  RIP CONFIGURATION
+!
+router rip
+network ip/mask
+redistribute connected
+!
+log file /var/log/frr/frr.log
+
+#
+#			-	Configurazione vtysh.conf (etc/frr/vtysh.conf)
+#
+
+service integrated-vtysh-config
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+#			-	Configurazione startup DNS
+#
+
+ip address add ip/net dev eth0
+
+# Inserire questo per far partire le configurazioni dei DNS e dei dispositivi local... (Per i dispositivi finali PC e simili basta l'IP)
+
+systemctl start named
+
+#
+#			-	Configurazione resolv.conf (/etc/resolv.conf)
+#
+
+# inserire il nome del dispositivo che risolve i nomi
+nameserver 192.168.0.110
+
+# inserire il nome del dominio in cui ci si trova per farsi trovare
+search uniroma3.it
+
+#
+#			- Configurazione db.root (/etc/bind/db.root)
+#
+
+# inserire il '.'' per indicare che si parla del ROOT.SERVER e inserire l'IP del DNS root
+.                   IN  NS    ROOT-SERVER.
+ROOT-SERVER.        IN  A     IP add (no indirizzo di rete)
+
+#
+#			- Configurazione named.conf(etc/bind/named.conf)
+#
+
+include "/etc/bind/named.conf.options";
+
+# Inserire la rete del root come hint
+zone "." {
+    type hint;
+    file "/etc/bind/db.root";
+};
+
+# Inserire la rete di cui sei master, quindi in questo caso questo DNS si occupa di xxx.it.
+
+zone "it" {
+    type master;
+    file "/etc/bind/db.it";
+};
+
+#
+#			-	Configurazione named.conf.options ()
+#
+
+options {
+    directory "/var/cache/bind";
+    # Da mettere nei local...
+    allow-recursion { ip/mask ; }; # inserire una rete che includa tutti i partecipanti alla rete di comunicazione tra DNS
+    dnssec-validation no;
+};
+
+#
+#			. Configurazione file instradamento DNS (/etc/bind/db.{{Nome del dominio ex. db.it.uniroma3 per dnsuni}})
+#
+
+$TTL    60000
+@               IN      SOA     {{Nome del DNS ex. dnsuni.uniroma3.it. }}   root.{{Nome del DNS ex. root.dnsuni.uniroma3.it.}} (
+						2006031201 ; serial # Cambiare il seriale con anno, giorno, mese e versione
+						28 ; refresh
+						14 ; retry
+						3600000 ; expire
+						0 ; negative cache ttl
+						)
+
+@						IN	NS	{{Nome del DNS ex. dnsuni.uniroma3.it.}}
+dnsuni.uniroma3.it.		IN	A	IP add
+
+#Inserire i DNS sottostanti che si conoscono se presenti
+
+startup.net.          IN     NS      {{Nome DNS ex. prova.uniroma3.it., prova un altro DNS}}
+dnsstart.startup.net. IN     A       IP add
+
+# Nome dei dispositivi connessi allo stesso dominio del DNS
+
+pc1.uniroma3.it.		IN	A	IP add
+localuni.uniroma3.it.	IN	A	IP ADD
