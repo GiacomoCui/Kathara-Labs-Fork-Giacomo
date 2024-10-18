@@ -150,3 +150,20 @@ dnsstart.startup.net. IN     A       IP add
 
 pc1.uniroma3.it.		IN	A	IP add
 localuni.uniroma3.it.	IN	A	IP ADD
+
+
+
+
+
+#
+#			-	Configurazione web server startup
+#
+
+ip address add ip/mask dev eth0
+systemctl start apache2
+
+#
+#			-	Configurazione cartella web server
+#
+
+Nella cartella del web server, indirizzo /var/www/html/index.html inserisci il file html da dover accedere nel caso in cui si linki il web server
